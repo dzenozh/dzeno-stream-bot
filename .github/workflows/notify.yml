@@ -1,0 +1,58 @@
+name: Streaming Notifier
+
+on:
+  # Haupt-Ausloeser: externer Timer (cron-job.org) ruft alle 5 Minuten "workflow_dispatch" auf.
+  workflow_dispatch: {}
+  # Backup: GitHubs eigener Timer (unzuverlaessig, nur als Notnagel gedacht).
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: write
+
+# Laeufe nacheinander abarbeiten, nie mittendrin abbrechen
+# (sonst koennte der Status verloren gehen und es gaebe doppelte Nachrichten).
+concurrency:
+  group: streaming-notifier
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run check
+        env:
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+          TWITCH_LOGIN: ${{ secrets.TWITCH_LOGIN }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          YOUTUBE_HANDLE: ${{ secrets.YOUTUBE_HANDLE }}
+          KICK_CLIENT_ID: ${{ secrets.KICK_CLIENT_ID }}
+          KICK_CLIENT_SECRET: ${{ secrets.KICK_CLIENT_SECRET }}
+          KICK_SLUG: ${{ secrets.KICK_SLUG }}
+          DISCORD_WEBHOOK_SCHEDULE: ${{ secrets.DISCORD_WEBHOOK_SCHEDULE }}
+          DISCORD_WEBHOOK_TWITCH_LIVE: ${{ secrets.DISCORD_WEBHOOK_TWITCH_LIVE }}
+          DISCORD_WEBHOOK_YOUTUBE: ${{ secrets.DISCORD_WEBHOOK_YOUTUBE }}
+          DISCORD_WEBHOOK_KICK: ${{ secrets.DISCORD_WEBHOOK_KICK }}
+        run: python check.py
+
+      - name: Commit updated state
+        run: |
+          git config user.name "streaming-notifier-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add state.json
+          git diff --cached --quiet || git commit -m "Update state [skip ci]"
+          git push
