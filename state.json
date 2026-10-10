@@ -1,9 +1,9 @@
 {
-  "kick_live": true,
-  "last_checked_utc": "2026-10-10T04:05:37.373835+00:00",
+  "kick_live": false,
+  "last_checked_utc": "2026-10-10T04:10:47.689352+00:00",
   "schedule_message_id": "1537546148431003699",
-  "twitch_live": true,
-  "twitch_live_message_id": "1558192660441993410",
+  "twitch_live": false,
+  "twitch_live_message_id": null,
   "youtube_last_video_id": "zxDd-PsKZns",
   "youtube_live": true
 }
